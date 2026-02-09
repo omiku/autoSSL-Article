@@ -1,0 +1,465 @@
+package ssh
+
+import (
+	"autoSSL/logger"
+	"autoSSL/utils/deployment/config"
+	"context"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/pkg/sftp"
+	"github.com/povsister/scp"
+	"go.uber.org/zap"
+	"golang.org/x/crypto/ssh"
+)
+
+// OutputFormatType 证书输出格式类型
+type OutputFormatType string
+
+const (
+	OUTPUT_FORMAT_PEM OutputFormatType = "pem"
+	OUTPUT_FORMAT_PFX OutputFormatType = "pfx"
+	OUTPUT_FORMAT_JKS OutputFormatType = "jks"
+	OUTPUT_FORMAT_DER OutputFormatType = "der"
+)
+
+// SSLDeployerProviderConfig SSH部署提供者配置
+type SSLDeployerProviderConfig struct {
+	Host          string `json:"host"`
+	Port          int    `json:"port"`
+	Username      string `json:"username"`
+	Password      string `json:"password"`
+	Key           string `json:"key"`
+	KeyPassphrase string `json:"key_passphrase"`
+	SshAuthMethod string `json:"ssh_auth_method"`
+
+	JumpServers []JumpServerConfig `json:"jump_servers"`
+
+	UseSCP                   bool             `json:"use_scp"`
+	PreCommand               string           `json:"pre_command"`
+	PostCommand              string           `json:"post_command"`
+	OutputFormat             OutputFormatType `json:"output_format"`
+	OutputCertPath           string           `json:"output_cert_path"`
+	OutputServerCertPath     string           `json:"output_server_cert_path"`
+	OutputIntermediaCertPath string           `json:"output_intermedia_cert_path"`
+	OutputKeyPath            string           `json:"output_key_path"`
+	PfxPassword              string           `json:"pfx_password"`
+	JksAlias                 string           `json:"jks_alias"`
+	JksKeypass               string           `json:"jks_keypass"`
+	JksStorepass             string           `json:"jks_storepass"`
+}
+
+func (c *SSLDeployerProviderConfig) validate() error {
+	if c.Host == "" {
+		return fmt.Errorf("SSH主机地址不能为空")
+	}
+	if c.Username == "" {
+		return fmt.Errorf("SSH用户名不能为空")
+	}
+	if c.Port <= 0 || c.Port > 65535 {
+		return fmt.Errorf("SSH端口必须在1-65535之间")
+	}
+	if c.Password == "" && c.Key == "" {
+		return fmt.Errorf("必须提供密码或私钥认证方式")
+	}
+	return nil
+}
+
+// JumpServerConfig 跳板机配置
+type JumpServerConfig struct {
+	Host     string `json:"host"`
+	Port     int    `json:"port"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Key      string `json:"key"`
+}
+
+// SSHDeployer SSH部署器
+type SSHDeployer struct {
+	config *SSLDeployerProviderConfig
+	logger *logger.Logger
+	client *ssh.Client
+	mu     sync.Mutex
+}
+
+// NewSSLDeployerProvider 创建新的SSH部署提供者实例
+func NewSSLDeployerProvider(config *SSLDeployerProviderConfig) (*SSHDeployer, error) {
+	if config.Host == "" {
+		config.Host = "localhost"
+	}
+	if config.Port == 0 {
+		config.Port = 22
+	}
+	if config.OutputFormat == "" {
+		config.OutputFormat = OUTPUT_FORMAT_PEM
+	}
+	if err := config.validate(); err != nil {
+		return nil, fmt.Errorf("配置验证失败: %w", err)
+	}
+	return &SSHDeployer{
+		config: config,
+		logger: logger.GetLogger(),
+	}, nil
+}
+
+// Name 返回部署提供者名称
+func (s *SSHDeployer) Name() string {
+	return "ssh"
+}
+
+// DeploymentConfig 部署配置参数结构体
+type DeploymentConfig struct {
+	RemoteCertPath string `json:"remote_cert_path"`
+	RemoteKeyPath  string `json:"remote_key_path"`
+	PreCommand     string `json:"pre_command"`
+	PostCommand    string `json:"post_command"`
+}
+
+// DeployCertificate 部署证书到SSH目标服务器
+func (s *SSHDeployer) DeployCertificate(ctx context.Context, certContent, keyContent string, workflowConfig map[string]interface{}) error {
+	s.logger.Debug("开始SSL证书部署",
+		zap.String("host", s.config.Host),
+		zap.Int("port", s.config.Port),
+		zap.String("username", s.config.Username),
+		zap.Int("jumpServers", len(s.config.JumpServers)))
+
+	// 解析部署配置
+	var deployConfig DeploymentConfig
+	if err := config.PopulateConfig(workflowConfig, &deployConfig); err != nil {
+		return fmt.Errorf("[CONFIG_ERROR] 解析部署配置失败 | 主机: %s:%d | 错误: %w", s.config.Host, s.config.Port, err)
+	}
+	if deployConfig.RemoteCertPath == "" {
+		return fmt.Errorf("[CONFIG_ERROR] remote_cert_path配置缺失 | 主机: %s:%d", s.config.Host, s.config.Port)
+	}
+	if deployConfig.RemoteKeyPath == "" {
+		return fmt.Errorf("[CONFIG_ERROR] remote_key_path配置缺失 | 主机: %s:%d", s.config.Host, s.config.Port)
+	}
+
+	// 前置命令
+	if deployConfig.PreCommand != "" {
+		if err := s.executeCommandWithTimeout(ctx, deployConfig.PreCommand); err != nil {
+			return fmt.Errorf("[PRE_COMMAND_ERROR] %w", err)
+		}
+	}
+
+	// 上传证书
+	if err := s.deployFileWithConnectionCheck(ctx, certContent, deployConfig.RemoteCertPath, 0644); err != nil {
+		return fmt.Errorf("[CERT_DEPLOY_ERROR] %w", err)
+	}
+
+	// 上传私钥
+	if err := s.deployFileWithConnectionCheck(ctx, keyContent, deployConfig.RemoteKeyPath, 0600); err != nil {
+		return fmt.Errorf("[KEY_DEPLOY_ERROR] %w", err)
+	}
+
+	// 后置命令
+	if deployConfig.PostCommand != "" {
+		if err := s.executeCommandWithTimeout(ctx, deployConfig.PostCommand); err != nil {
+			return fmt.Errorf("[POST_COMMAND_ERROR] %w", err)
+		}
+	}
+
+	s.logger.Info("SSL证书部署完成",
+		zap.String("host", s.config.Host),
+		zap.Int("port", s.config.Port))
+	return nil
+}
+
+// ---------- 以下为内部辅助方法 ----------
+
+func (s *SSHDeployer) ensureConnection(ctx context.Context) (*ssh.Client, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.client != nil && s.isConnectionAlive() {
+		return s.client, nil
+	}
+	if s.client != nil {
+		s.client.Close()
+		s.client = nil
+	}
+	client, err := s.createSSHConnection(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("[SSH_RECONNECT_ERROR] SSH连接重建失败: %w", err)
+	}
+	s.client = client
+	return client, nil
+}
+
+func (s *SSHDeployer) isConnectionAlive() bool {
+	if s.client == nil {
+		return false
+	}
+	session, err := s.client.NewSession()
+	if err != nil {
+		return false
+	}
+	session.Close()
+	return true
+}
+
+func (s *SSHDeployer) closeConnection() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.client != nil {
+		s.client.Close()
+		s.client = nil
+	}
+}
+
+func (s *SSHDeployer) createSSHConnection(ctx context.Context) (*ssh.Client, error) {
+	cfg, err := s.buildSSHClientConfig()
+	if err != nil {
+		return nil, err
+	}
+	if len(s.config.JumpServers) > 0 {
+		return s.createJumpConnection(ctx, cfg)
+	}
+	return s.createDirectConnection(ctx, cfg)
+}
+
+func (s *SSHDeployer) buildSSHClientConfig() (*ssh.ClientConfig, error) {
+	var auths []ssh.AuthMethod
+	if s.config.Password != "" {
+		auths = append(auths, ssh.Password(s.config.Password))
+	}
+	if s.config.Key != "" {
+		var signer ssh.Signer
+		var err error
+		if s.config.KeyPassphrase != "" {
+			signer, err = ssh.ParsePrivateKeyWithPassphrase([]byte(s.config.Key), []byte(s.config.KeyPassphrase))
+		} else {
+			signer, err = ssh.ParsePrivateKey([]byte(s.config.Key))
+		}
+		if err != nil {
+			return nil, fmt.Errorf("解析私钥失败: %w", err)
+		}
+		auths = append(auths, ssh.PublicKeys(signer))
+	}
+	if len(auths) == 0 {
+		return nil, fmt.Errorf("未配置认证方式")
+	}
+	return &ssh.ClientConfig{
+		User:            s.config.Username,
+		Auth:            auths,
+		Timeout:         30 * time.Second,
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+	}, nil
+}
+
+func (s *SSHDeployer) createDirectConnection(ctx context.Context, cfg *ssh.ClientConfig) (*ssh.Client, error) {
+	addr := fmt.Sprintf("%s:%d", s.config.Host, s.config.Port)
+	done := make(chan struct{})
+	var client *ssh.Client
+	var err error
+	go func() {
+		client, err = ssh.Dial("tcp", addr, cfg)
+		close(done)
+	}()
+	select {
+	case <-done:
+		return client, err
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+}
+
+func (s *SSHDeployer) createJumpConnection(ctx context.Context, cfg *ssh.ClientConfig) (*ssh.Client, error) {
+	var current *ssh.Client
+	for i, j := range s.config.JumpServers {
+		jCfg := &ssh.ClientConfig{
+			User:            j.Username,
+			Auth:            []ssh.AuthMethod{},
+			Timeout:         30 * time.Second,
+			HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		}
+		if j.Key != "" {
+			signer, err := ssh.ParsePrivateKey([]byte(j.Key))
+			if err != nil {
+				return nil, fmt.Errorf("跳板机私钥解析失败: %w", err)
+			}
+			jCfg.Auth = append(jCfg.Auth, ssh.PublicKeys(signer))
+		} else {
+			jCfg.Auth = append(jCfg.Auth, ssh.Password(j.Password))
+		}
+		addr := fmt.Sprintf("%s:%d", j.Host, j.Port)
+		var err error
+		if i == 0 {
+			current, err = ssh.Dial("tcp", addr, jCfg)
+		} else {
+			conn, err := current.Dial("tcp", addr)
+			if err != nil {
+				return nil, err
+			}
+			cc, chans, reqs, err := ssh.NewClientConn(conn, addr, jCfg)
+			if err != nil {
+				return nil, err
+			}
+			current.Close()
+			current = ssh.NewClient(cc, chans, reqs)
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	finalConn, err := current.Dial("tcp", fmt.Sprintf("%s:%d", s.config.Host, s.config.Port))
+	if err != nil {
+		return nil, err
+	}
+	finalCC, chans, reqs, err := ssh.NewClientConn(finalConn, fmt.Sprintf("%s:%d", s.config.Host, s.config.Port), cfg)
+	if err != nil {
+		return nil, err
+	}
+	return ssh.NewClient(finalCC, chans, reqs), nil
+}
+
+func (s *SSHDeployer) executeCommandWithTimeout(ctx context.Context, cmd string) error {
+	client, err := s.ensureConnection(ctx)
+	if err != nil {
+		return err
+	}
+	session, err := client.NewSession()
+	if err != nil {
+		return fmt.Errorf("[SSH_ERROR] 创建会话失败 | 远程地址: %s | 错误: %v", client.RemoteAddr(), err)
+	}
+	defer session.Close()
+
+	done := make(chan error, 1)
+	go func() {
+		out, err := session.CombinedOutput(cmd)
+		if err != nil {
+			err = fmt.Errorf("[SSH_COMMAND_ERROR] 命令执行失败 | 远程地址: %s | 命令: %s | 输出: %s | 错误: %v",
+				client.RemoteAddr(), cmd, string(out), err)
+		}
+		done <- err
+	}()
+	select {
+	case err := <-done:
+		return err
+	case <-ctx.Done():
+		return fmt.Errorf("[SSH_TIMEOUT] 命令执行超时 | 远程地址: %s | 命令: %s", client.RemoteAddr(), cmd)
+	}
+}
+
+// ---------- 新增：带重试的文件部署 ----------
+
+func (s *SSHDeployer) deployFileWithConnectionCheck(ctx context.Context,
+	content, remotePath string, fileMode os.FileMode) error {
+
+	client, err := s.ensureConnection(ctx)
+	if err != nil {
+		return err
+	}
+	return s.deployFileWithRetry(ctx, client, content, remotePath, fileMode)
+}
+
+func (s *SSHDeployer) deployFileWithRetry(ctx context.Context, client *ssh.Client,
+	content, remotePath string, fileMode os.FileMode) error {
+
+	const maxRetries = 3
+	const retryDelay = 2 * time.Second
+
+	var err error
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		if attempt > 0 {
+			s.logger.Info("文件部署重试",
+				zap.Int("attempt", attempt+1),
+				zap.Int("max_retries", maxRetries),
+				zap.String("path", remotePath))
+			select {
+			case <-time.After(retryDelay):
+			case <-ctx.Done():
+				return ctx.Err()
+			}
+		}
+
+		if !s.isConnectionAlive() {
+			s.logger.Debug("连接失效，重新建立连接")
+			client, err = s.ensureConnection(ctx)
+			if err != nil {
+				continue
+			}
+		}
+
+		err = s.deployFileWithFallback(ctx, client, content, remotePath, fileMode)
+		if err == nil {
+			return nil
+		}
+		if s.isConnectionError(err) {
+			s.logger.Debug("检测到连接错误，准备重试", zap.Error(err))
+			s.closeConnection()
+			continue
+		}
+		return err
+	}
+	return fmt.Errorf("文件部署重试次数耗尽")
+}
+
+// ---------- 原有文件传输实现（未改动） ----------
+
+func (s *SSHDeployer) deployFileWithFallback(ctx context.Context, client *ssh.Client,
+	content, remotePath string, fileMode os.FileMode) error {
+
+	if s.config.UseSCP {
+		if err := s.scpSendContentWithPermission(ctx, client, content, remotePath, fileMode); err == nil {
+			return nil
+		}
+	}
+	return s.sftpSendContentWithPermission(ctx, client, content, remotePath, fileMode)
+}
+
+func (s *SSHDeployer) scpSendContentWithPermission(ctx context.Context,
+	client *ssh.Client, content, remotePath string, fileMode os.FileMode) error {
+	scpCli, err := scp.NewClientFromExistingSSH(client, &scp.ClientOption{})
+	if err != nil {
+		return fmt.Errorf("[SCP_ERROR] 创建SCP客户端失败: %w", err)
+	}
+	defer scpCli.Close()
+
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Minute)
+	defer cancel()
+
+	return scpCli.CopyToRemote(strings.NewReader(content), remotePath,
+		&scp.FileTransferOption{Context: ctx, Timeout: 3 * time.Minute, Perm: fileMode})
+}
+
+func (s *SSHDeployer) sftpSendContentWithPermission(ctx context.Context,
+	client *ssh.Client, content, remotePath string, fileMode os.FileMode) error {
+	sftpCli, err := sftp.NewClient(client)
+	if err != nil {
+		return fmt.Errorf("[SFTP_ERROR] 创建SFTP客户端失败: %w", err)
+	}
+	defer sftpCli.Close()
+
+	dir := filepath.Dir(remotePath)
+	if dir != "." && dir != "/" {
+		if err := sftpCli.MkdirAll(dir); err != nil {
+			return fmt.Errorf("[SFTP_MKDIR_ERROR] 创建目录失败: %w", err)
+		}
+	}
+	file, err := sftpCli.Create(remotePath)
+	if err != nil {
+		return fmt.Errorf("[SFTP_CREATE_ERROR] 创建文件失败: %w", err)
+	}
+	defer file.Close()
+
+	if err := file.Chmod(fileMode); err != nil {
+		return fmt.Errorf("[SFTP_CHMOD_ERROR] 设置权限失败: %w", err)
+	}
+	if _, err := file.Write([]byte(content)); err != nil {
+		return fmt.Errorf("[SFTP_WRITE_ERROR] 写入内容失败: %w", err)
+	}
+	return nil
+}
+
+// 判断错误是否由连接断开导致（简单关键字匹配）
+func (s *SSHDeployer) isConnectionError(err error) bool {
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "use of closed network connection") ||
+		strings.Contains(msg, "eof") ||
+		strings.Contains(msg, "connection reset")
+}

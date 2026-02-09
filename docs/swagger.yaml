@@ -1,0 +1,3123 @@
+basePath: /apiv1
+definitions:
+  access.CreateAccessRequest:
+    properties:
+      config:
+        additionalProperties: true
+        description: 配置详情
+        type: object
+      is_active:
+        default: true
+        description: 是否启用
+        type: boolean
+      name:
+        description: 配置名称
+        type: string
+      type:
+        description: 访问类型
+        enum:
+        - ssh
+        - api
+        - tencentcloud-teo
+        type: string
+    required:
+    - config
+    - name
+    - type
+    type: object
+  access.Type:
+    enum:
+    - ssh
+    - api
+    - tencentcloud-teo
+    - other
+    type: string
+    x-enum-varnames:
+    - TypeSSH
+    - TypeAPI
+    - TypeTencentcloudTeo
+    - TypeOther
+  access.UpdateAccessRequest:
+    properties:
+      config:
+        additionalProperties: true
+        description: 配置详情
+        type: object
+      is_active:
+        description: 是否启用
+        type: boolean
+      name:
+        description: 配置名称
+        type: string
+      type:
+        description: 访问类型
+        enum:
+        - ssh
+        - api
+        - tencentcloud-teo
+        type: string
+    required:
+    - config
+    - name
+    - type
+    type: object
+  admin.AdminGlobalSMSConfigResponse:
+    properties:
+      access_key:
+        type: string
+      is_configured:
+        type: boolean
+      provider:
+        type: string
+      region:
+        type: string
+      secret_key:
+        type: string
+      sign_name:
+        type: string
+      template_code:
+        type: string
+    type: object
+  admin.GlobalEmailConfigResponse:
+    properties:
+      from_email:
+        type: string
+      from_name:
+        type: string
+      is_configured:
+        type: boolean
+      smtp_port:
+        type: integer
+      smtp_server:
+        type: string
+      smtp_username:
+        type: string
+    type: object
+  admin.SetEmailConfigRequest:
+    properties:
+      from_email:
+        type: string
+      from_name:
+        type: string
+      smtp_password:
+        type: string
+      smtp_port:
+        type: integer
+      smtp_server:
+        type: string
+      smtp_username:
+        type: string
+    required:
+    - from_email
+    - from_name
+    - smtp_password
+    - smtp_port
+    - smtp_server
+    - smtp_username
+    type: object
+  admin.SetSMSConfigRequest:
+    properties:
+      access_key:
+        type: string
+      provider:
+        type: string
+      region:
+        type: string
+      secret_key:
+        type: string
+      sign_name:
+        type: string
+      template_code:
+        type: string
+    required:
+    - access_key
+    - provider
+    - region
+    - secret_key
+    - sign_name
+    - template_code
+    type: object
+  auth.CaptchaResponse:
+    properties:
+      captcha_id:
+        type: string
+      error: {}
+      image: {}
+    type: object
+  auth.LoginRequest:
+    description: 登录接口所需的请求参数
+    properties:
+      answer:
+        type: string
+      captcha_id:
+        type: string
+      email:
+        type: string
+      password:
+        minLength: 8
+        type: string
+    required:
+    - answer
+    - captcha_id
+    - email
+    - password
+    type: object
+  auth.LoginResponse:
+    description: 登录接口返回的响应数据
+    properties:
+      access_token:
+        type: string
+      refresh_token:
+        type: string
+    type: object
+  auth.RefreshRequest:
+    description: 刷新令牌接口所需的请求参数
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  auth.RefreshResponse:
+    description: 刷新令牌接口返回的响应数据
+    properties:
+      access_token:
+        type: string
+      refresh_token:
+        type: string
+    type: object
+  auth.RegisterRequest:
+    description: 注册接口所需的请求参数
+    properties:
+      answer:
+        type: string
+      captcha_id:
+        type: string
+      email:
+        type: string
+      password:
+        minLength: 8
+        type: string
+    required:
+    - answer
+    - captcha_id
+    - email
+    - password
+    type: object
+  auth.RegisterResponse:
+    description: 注册接口返回的响应数据
+    properties:
+      email:
+        type: string
+      id:
+        type: integer
+    type: object
+  certificate.CreateCertificateRequest:
+    description: 创建SSL证书所需的完整请求参数
+    properties:
+      access_ids:
+        description: |-
+          访问配置ID列表
+          @Description 证书部署的目标服务器访问配置ID数组，与server_group_id二选一
+          @Example [1,2,3]
+        items:
+          type: integer
+        type: array
+      dns_provider_id:
+        description: |-
+          DNS提供商ID
+          @Description DNS提供商的ID，用于DNS验证
+          @Example 1
+        type: integer
+      domains:
+        description: |-
+          域名列表
+          @Description 需要申请证书的域名列表，必须是有效的域名格式，支持多个域名合并到同一证书
+          @Example ["example.com","www.example.com","api.example.com"]
+        items:
+          type: string
+        minItems: 1
+        type: array
+      execute_immediately:
+        default: true
+        description: |-
+          立即执行
+          @Description 是否立即开始执行证书申请流程
+          @Example true
+        type: boolean
+      extra_config:
+        additionalProperties: true
+        description: |-
+          额外配置
+          @Description 工作流额外配置参数，根据部署方式不同而变化
+          @Example {"remote_cert_path":"/etc/nginx/ssl/cert.pem","remote_key_path":"/etc/nginx/ssl/key.pem","pre_command":"nginx -t","post_command":"systemctl reload nginx"}
+        type: object
+      issued_by:
+        description: |-
+          颁发机构
+          @Description 证书颁发机构，支持 letsencrypt, zerossl 等
+          @Example letsencrypt
+        type: string
+      renewal_days_before:
+        description: |-
+          续期提前天数
+          @Description 证书到期前多少天开始自动续期，范围1-30天
+          @Minimum 1
+          @Maximum 30
+          @Example 30
+        maximum: 30
+        minimum: 1
+        type: integer
+      renewal_enabled:
+        description: |-
+          自动续期
+          @Description 是否启用证书自动续期功能
+          @Example true
+        type: boolean
+      server_group_id:
+        description: |-
+          服务器组ID
+          @Description 证书部署的目标服务器组ID，与access_ids二选一
+          @Example 1
+        type: integer
+      unified_notification_config:
+        allOf:
+        - $ref: '#/definitions/notification.UnifiedNotificationConfig'
+        description: |-
+          统一通知配置
+          @Description 证书状态变更的统一通知配置，支持多种通知方式
+          @Example {"use_system_global":true,"targets":{"emails":["admin@example.com"]},"events":["apply_success","deploy_failed"]}
+      validation_type:
+        description: |-
+          验证类型
+          @Description 域名验证方式，支持dns或http验证
+          @Enum dns,http
+          @Example dns
+        enum:
+        - dns
+        - http
+        type: string
+    required:
+    - dns_provider_id
+    - domains
+    - issued_by
+    - validation_type
+    type: object
+  certificate.Status:
+    enum:
+    - pending
+    - pending
+    - processing
+    - issued
+    - deploying
+    - completed
+    - failed
+    type: string
+    x-enum-varnames:
+    - DefaultStatus
+    - StatusPending
+    - StatusProcessing
+    - StatusIssued
+    - StatusDeploying
+    - StatusCompleted
+    - StatusFailed
+  certificate.ValidationType:
+    enum:
+    - dns
+    - http
+    type: string
+    x-enum-varnames:
+    - ValidationTypeDNS
+    - ValidationTypeHTTP
+  certificatedeployment.Status:
+    enum:
+    - pending
+    - pending
+    - success
+    - failed
+    type: string
+    x-enum-varnames:
+    - DefaultStatus
+    - StatusPending
+    - StatusSuccess
+    - StatusFailed
+  dashboard.CountStats:
+    properties:
+      total_accesses:
+        type: integer
+      total_certificates:
+        type: integer
+      total_dns_providers:
+        type: integer
+      total_server_groups:
+        type: integer
+    type: object
+  dashboard.DeploymentInfo:
+    properties:
+      certificate_name:
+        type: string
+      deployment_type:
+        description: '"server_group" 或 "access"'
+        type: string
+      last_updated:
+        type: string
+      status:
+        type: string
+      target_name:
+        type: string
+    type: object
+  dashboard.PendingWorkflow:
+    properties:
+      certificate_name:
+        type: string
+      created_at:
+        type: string
+      deployment_type:
+        description: '"server_group" 或 "access"'
+        type: string
+      target_name:
+        type: string
+    type: object
+  dnsprovider.CreateDNSProviderRequest:
+    properties:
+      config:
+        $ref: '#/definitions/dnsprovider.DNSConfig'
+      provider_type:
+        type: string
+    required:
+    - config
+    - provider_type
+    type: object
+  dnsprovider.DNSConfig:
+    properties:
+      api_key:
+        type: string
+      api_secret:
+        type: string
+      api_token:
+        type: string
+      region:
+        type: string
+      zone_id:
+        type: string
+    type: object
+  dnsprovider.ProviderType:
+    enum:
+    - cloudflare
+    - alidns
+    - tencentcloud
+    type: string
+    x-enum-varnames:
+    - ProviderTypeCloudflare
+    - ProviderTypeAlidns
+    - ProviderTypeTencentcloud
+  dnsprovider.UpdateDNSProviderRequest:
+    properties:
+      config:
+        $ref: '#/definitions/dnsprovider.DNSConfig'
+      provider_type:
+        type: string
+    required:
+    - config
+    - provider_type
+    type: object
+  ent.ACMEAccount:
+    properties:
+      created_at:
+        description: 创建时间
+        type: string
+      edges:
+        allOf:
+        - $ref: '#/definitions/ent.ACMEAccountEdges'
+        description: |-
+          Edges holds the relations/edges for other nodes in the graph.
+          The values are being populated by the ACMEAccountQuery when eager-loading is set.
+      email:
+        description: ACME账号邮箱地址
+        type: string
+      id:
+        description: ID of the ent.
+        type: integer
+      private_key:
+        description: ACME账号私钥，PEM格式
+        type: string
+      provider:
+        description: 'SSL证书提供商: letsencrypt, zerossl'
+        type: string
+      registration_body:
+        description: ACME注册响应体，JSON格式
+        type: string
+      registration_uri:
+        description: ACME注册URI
+        type: string
+      updated_at:
+        description: 更新时间
+        type: string
+    type: object
+  ent.ACMEAccountEdges:
+    properties:
+      certificates:
+        description: Certificates holds the value of the certificates edge.
+        items:
+          $ref: '#/definitions/ent.Certificate'
+        type: array
+      user:
+        allOf:
+        - $ref: '#/definitions/ent.User'
+        description: User holds the value of the user edge.
+    type: object
+  ent.Access:
+    properties:
+      created_at:
+        description: CreatedAt holds the value of the "created_at" field.
+        type: string
+      edges:
+        allOf:
+        - $ref: '#/definitions/ent.AccessEdges'
+        description: |-
+          Edges holds the relations/edges for other nodes in the graph.
+          The values are being populated by the AccessQuery when eager-loading is set.
+      id:
+        description: ID of the ent.
+        type: integer
+      is_active:
+        description: 是否启用
+        type: boolean
+      name:
+        description: 权限配置名称
+        type: string
+      type:
+        allOf:
+        - $ref: '#/definitions/access.Type'
+        description: 访问类型
+      updated_at:
+        description: UpdatedAt holds the value of the "updated_at" field.
+        type: string
+    type: object
+  ent.AccessEdges:
+    properties:
+      deployments:
+        description: 部署记录
+        items:
+          $ref: '#/definitions/ent.CertificateDeployment'
+        type: array
+      server_group_members:
+        description: 关联的服务器组成员
+        items:
+          $ref: '#/definitions/ent.ServerGroupMember'
+        type: array
+      user:
+        allOf:
+        - $ref: '#/definitions/ent.User'
+        description: 所属用户
+    type: object
+  ent.Certificate:
+    properties:
+      access_ids:
+        description: 访问配置ID列表
+        items:
+          type: integer
+        type: array
+      acme_account_email:
+        description: ACME账号邮箱
+        type: string
+      created_at:
+        description: CreatedAt holds the value of the "created_at" field.
+        type: string
+      dns_provider_name:
+        description: DNS提供商名称
+        type: string
+      domains:
+        description: 证书域名列表
+        items:
+          type: string
+        type: array
+      edges:
+        allOf:
+        - $ref: '#/definitions/ent.CertificateEdges'
+        description: |-
+          Edges holds the relations/edges for other nodes in the graph.
+          The values are being populated by the CertificateQuery when eager-loading is set.
+      error_message:
+        description: 错误信息
+        type: string
+      expired_at:
+        description: 过期时间
+        type: string
+      id:
+        description: ID of the ent.
+        type: integer
+      issued_at:
+        description: 签发时间
+        type: string
+      issued_by:
+        description: 签发机构
+        type: string
+      renewal_days_before:
+        description: 距离过期前多少天开始续期
+        type: integer
+      renewal_enabled:
+        description: 是否启用自动续期
+        type: boolean
+      server_group_id:
+        description: 服务器组ID
+        type: integer
+      status:
+        allOf:
+        - $ref: '#/definitions/certificate.Status'
+        description: Status holds the value of the "status" field.
+      updated_at:
+        description: UpdatedAt holds the value of the "updated_at" field.
+        type: string
+      validation_type:
+        allOf:
+        - $ref: '#/definitions/certificate.ValidationType'
+        description: 验证类型
+    type: object
+  ent.CertificateDeployment:
+    properties:
+      created_at:
+        description: CreatedAt holds the value of the "created_at" field.
+        type: string
+      deployed_at:
+        description: 部署时间
+        type: string
+      edges:
+        allOf:
+        - $ref: '#/definitions/ent.CertificateDeploymentEdges'
+        description: |-
+          Edges holds the relations/edges for other nodes in the graph.
+          The values are being populated by the CertificateDeploymentQuery when eager-loading is set.
+      id:
+        description: ID of the ent.
+        type: integer
+      log:
+        description: 部署日志
+        type: string
+      status:
+        allOf:
+        - $ref: '#/definitions/certificatedeployment.Status'
+        description: 部署状态
+    type: object
+  ent.CertificateDeploymentEdges:
+    properties:
+      access:
+        description: 访问配置
+        items:
+          $ref: '#/definitions/ent.Access'
+        type: array
+      certificate:
+        allOf:
+        - $ref: '#/definitions/ent.Certificate'
+        description: Certificate holds the value of the certificate edge.
+      server_group:
+        allOf:
+        - $ref: '#/definitions/ent.ServerGroup'
+        description: 关联的服务器组
+    type: object
+  ent.CertificateEdges:
+    properties:
+      acme_account:
+        allOf:
+        - $ref: '#/definitions/ent.ACMEAccount'
+        description: AcmeAccount holds the value of the acme_account edge.
+      deployments:
+        description: Deployments holds the value of the deployments edge.
+        items:
+          $ref: '#/definitions/ent.CertificateDeployment'
+        type: array
+      dns_provider:
+        allOf:
+        - $ref: '#/definitions/ent.DNSProvider'
+        description: DNSProvider holds the value of the dns_provider edge.
+      user:
+        allOf:
+        - $ref: '#/definitions/ent.User'
+        description: User holds the value of the user edge.
+      workflow_steps:
+        description: WorkflowSteps holds the value of the workflow_steps edge.
+        items:
+          $ref: '#/definitions/ent.WorkflowStep'
+        type: array
+      workflows:
+        description: 关联的工作流
+        items:
+          $ref: '#/definitions/ent.Workflow'
+        type: array
+    type: object
+  ent.DNSProvider:
+    properties:
+      config:
+        additionalProperties: true
+        description: 供应商配置 (JSON格式，包含所有认证信息)
+        type: object
+      created_at:
+        description: CreatedAt holds the value of the "created_at" field.
+        type: string
+      edges:
+        allOf:
+        - $ref: '#/definitions/ent.DNSProviderEdges'
+        description: |-
+          Edges holds the relations/edges for other nodes in the graph.
+          The values are being populated by the DNSProviderQuery when eager-loading is set.
+      id:
+        description: ID of the ent.
+        type: integer
+      provider_type:
+        allOf:
+        - $ref: '#/definitions/dnsprovider.ProviderType'
+        description: DNS服务商类型
+      updated_at:
+        description: UpdatedAt holds the value of the "updated_at" field.
+        type: string
+    type: object
+  ent.DNSProviderEdges:
+    properties:
+      certificates:
+        description: 关联的证书
+        items:
+          $ref: '#/definitions/ent.Certificate'
+        type: array
+      user:
+        allOf:
+        - $ref: '#/definitions/ent.User'
+        description: User holds the value of the user edge.
+    type: object
+  ent.NotificationConfig:
+    properties:
+      config:
+        additionalProperties: true
+        description: "通知配置参数(JSON格式)\n\t\t\t\t- webhook: {url:string, secret:string}\n\t\t\t\t-
+          email: {smtp_server:string, smtp_port:int, username:string, password:string,
+          from:string}\n\t\t\t\t- sms: {api_key:string, template_id:string, sign_name:string}"
+        type: object
+      created_at:
+        description: 创建时间
+        type: string
+      edges:
+        allOf:
+        - $ref: '#/definitions/ent.NotificationConfigEdges'
+        description: |-
+          Edges holds the relations/edges for other nodes in the graph.
+          The values are being populated by the NotificationConfigQuery when eager-loading is set.
+      id:
+        description: ID of the ent.
+        type: integer
+      is_active:
+        description: 是否启用
+        type: boolean
+      name:
+        description: 配置名称
+        type: string
+      type:
+        allOf:
+        - $ref: '#/definitions/notificationconfig.Type'
+        description: 通知类型
+      updated_at:
+        description: 更新时间
+        type: string
+    type: object
+  ent.NotificationConfigEdges:
+    properties:
+      user:
+        allOf:
+        - $ref: '#/definitions/ent.User'
+        description: 所属用户
+    type: object
+  ent.Order:
+    properties:
+      cert_num:
+        description: 证书数量
+        type: integer
+      created_at:
+        description: CreatedAt holds the value of the "created_at" field.
+        type: string
+      deploy_num:
+        description: 部署服务器数量
+        type: integer
+      edges:
+        allOf:
+        - $ref: '#/definitions/ent.OrderEdges'
+        description: |-
+          Edges holds the relations/edges for other nodes in the graph.
+          The values are being populated by the OrderQuery when eager-loading is set.
+      end_date:
+        description: 订单失效时间
+        type: string
+      id:
+        description: ID of the ent.
+        type: integer
+      order_type:
+        allOf:
+        - $ref: '#/definitions/order.OrderType'
+        description: 订单类型
+      price:
+        description: 订单金额
+        type: number
+      start_date:
+        description: 订单生效时间
+        type: string
+      status:
+        allOf:
+        - $ref: '#/definitions/order.Status'
+        description: Status holds the value of the "status" field.
+    type: object
+  ent.OrderEdges:
+    properties:
+      user:
+        allOf:
+        - $ref: '#/definitions/ent.User'
+        description: User holds the value of the user edge.
+    type: object
+  ent.Permission:
+    properties:
+      action:
+        description: 操作名称
+        type: string
+      description:
+        description: 权限描述
+        type: string
+      edges:
+        allOf:
+        - $ref: '#/definitions/ent.PermissionEdges'
+        description: |-
+          Edges holds the relations/edges for other nodes in the graph.
+          The values are being populated by the PermissionQuery when eager-loading is set.
+      id:
+        description: ID of the ent.
+        type: integer
+      resource:
+        description: 资源名称
+        type: string
+    type: object
+  ent.PermissionEdges:
+    properties:
+      roles:
+        description: 所属角色
+        items:
+          $ref: '#/definitions/ent.Role'
+        type: array
+    type: object
+  ent.Role:
+    properties:
+      description:
+        description: 角色描述
+        type: string
+      edges:
+        allOf:
+        - $ref: '#/definitions/ent.RoleEdges'
+        description: |-
+          Edges holds the relations/edges for other nodes in the graph.
+          The values are being populated by the RoleQuery when eager-loading is set.
+      id:
+        description: ID of the ent.
+        type: integer
+      is_system:
+        description: 是否为系统角色
+        type: boolean
+      name:
+        description: 角色名称
+        type: string
+    type: object
+  ent.RoleEdges:
+    properties:
+      permissions:
+        description: 角色权限
+        items:
+          $ref: '#/definitions/ent.Permission'
+        type: array
+      users:
+        description: 角色用户
+        items:
+          $ref: '#/definitions/ent.User'
+        type: array
+    type: object
+  ent.ServerGroup:
+    properties:
+      created_at:
+        description: CreatedAt holds the value of the "created_at" field.
+        type: string
+      description:
+        description: 组描述
+        type: string
+      edges:
+        allOf:
+        - $ref: '#/definitions/ent.ServerGroupEdges'
+        description: |-
+          Edges holds the relations/edges for other nodes in the graph.
+          The values are being populated by the ServerGroupQuery when eager-loading is set.
+      id:
+        description: ID of the ent.
+        type: integer
+      name:
+        description: 组名称
+        type: string
+      status:
+        allOf:
+        - $ref: '#/definitions/servergroup.Status'
+        description: 组状态
+      type:
+        allOf:
+        - $ref: '#/definitions/servergroup.Type'
+        description: 组访问类型
+      updated_at:
+        description: UpdatedAt holds the value of the "updated_at" field.
+        type: string
+    type: object
+  ent.ServerGroupEdges:
+    properties:
+      certificate_deployments:
+        description: 关联的证书部署记录
+        items:
+          $ref: '#/definitions/ent.CertificateDeployment'
+        type: array
+      group_memberships:
+        description: GroupMemberships holds the value of the group_memberships edge.
+        items:
+          $ref: '#/definitions/ent.ServerGroupMember'
+        type: array
+      user:
+        allOf:
+        - $ref: '#/definitions/ent.User'
+        description: User holds the value of the user edge.
+    type: object
+  ent.ServerGroupMember:
+    properties:
+      created_at:
+        description: CreatedAt holds the value of the "created_at" field.
+        type: string
+      edges:
+        allOf:
+        - $ref: '#/definitions/ent.ServerGroupMemberEdges'
+        description: |-
+          Edges holds the relations/edges for other nodes in the graph.
+          The values are being populated by the ServerGroupMemberQuery when eager-loading is set.
+      id:
+        description: ID of the ent.
+        type: integer
+      type:
+        allOf:
+        - $ref: '#/definitions/servergroupmember.Type'
+        description: 访问类型
+      updated_at:
+        description: UpdatedAt holds the value of the "updated_at" field.
+        type: string
+    type: object
+  ent.ServerGroupMemberEdges:
+    properties:
+      access:
+        allOf:
+        - $ref: '#/definitions/ent.Access'
+        description: 关联的访问配置
+      server_group:
+        allOf:
+        - $ref: '#/definitions/ent.ServerGroup'
+        description: 关联的服务器组
+    type: object
+  ent.User:
+    properties:
+      created_at:
+        description: CreatedAt holds the value of the "created_at" field.
+        type: string
+      edges:
+        allOf:
+        - $ref: '#/definitions/ent.UserEdges'
+        description: |-
+          Edges holds the relations/edges for other nodes in the graph.
+          The values are being populated by the UserQuery when eager-loading is set.
+      email:
+        description: 登录邮箱
+        type: string
+      id:
+        description: ID of the ent.
+        type: integer
+      is_active:
+        description: 账户状态
+        type: boolean
+      is_admin:
+        description: 管理员标识
+        type: boolean
+      updated_at:
+        description: UpdatedAt holds the value of the "updated_at" field.
+        type: string
+    type: object
+  ent.UserEdges:
+    properties:
+      access_configs:
+        description: 访问配置
+        items:
+          $ref: '#/definitions/ent.Access'
+        type: array
+      acme_accounts:
+        description: 用户的ACME账户
+        items:
+          $ref: '#/definitions/ent.ACMEAccount'
+        type: array
+      certificates:
+        description: 用户证书
+        items:
+          $ref: '#/definitions/ent.Certificate'
+        type: array
+      dns_providers:
+        description: DNS提供商配置
+        items:
+          $ref: '#/definitions/ent.DNSProvider'
+        type: array
+      notification_configs:
+        description: 通知配置
+        items:
+          $ref: '#/definitions/ent.NotificationConfig'
+        type: array
+      orders:
+        description: 用户订单
+        items:
+          $ref: '#/definitions/ent.Order'
+        type: array
+      roles:
+        description: 用户角色
+        items:
+          $ref: '#/definitions/ent.Role'
+        type: array
+      server_groups:
+        description: 服务器组
+        items:
+          $ref: '#/definitions/ent.ServerGroup'
+        type: array
+      workflow_steps:
+        description: 工作流步骤
+        items:
+          $ref: '#/definitions/ent.WorkflowStep'
+        type: array
+      workflows:
+        description: 用户工作流
+        items:
+          $ref: '#/definitions/ent.Workflow'
+        type: array
+    type: object
+  ent.Workflow:
+    properties:
+      completed_at:
+        description: 完成时间
+        type: string
+      created_at:
+        description: CreatedAt holds the value of the "created_at" field.
+        type: string
+      current_step:
+        description: 当前工作流步骤
+        type: integer
+      domain:
+        description: 域名
+        type: string
+      edges:
+        allOf:
+        - $ref: '#/definitions/ent.WorkflowEdges'
+        description: |-
+          Edges holds the relations/edges for other nodes in the graph.
+          The values are being populated by the WorkflowQuery when eager-loading is set.
+      id:
+        description: ID of the ent.
+        type: integer
+      status:
+        description: '工作流状态: pending, processing, issued, deploying, completed, failed,
+          cancelled'
+        type: string
+      total_steps:
+        description: 总工作流步骤数
+        type: integer
+      updated_at:
+        description: UpdatedAt holds the value of the "updated_at" field.
+        type: string
+    type: object
+  ent.WorkflowEdges:
+    properties:
+      certificate:
+        allOf:
+        - $ref: '#/definitions/ent.Certificate'
+        description: Certificate holds the value of the certificate edge.
+      steps:
+        description: Steps holds the value of the steps edge.
+        items:
+          $ref: '#/definitions/ent.WorkflowStep'
+        type: array
+      user:
+        allOf:
+        - $ref: '#/definitions/ent.User'
+        description: User holds the value of the user edge.
+    type: object
+  ent.WorkflowStep:
+    properties:
+      completed_at:
+        description: 完成时间
+        type: string
+      created_at:
+        description: CreatedAt holds the value of the "created_at" field.
+        type: string
+      edges:
+        allOf:
+        - $ref: '#/definitions/ent.WorkflowStepEdges'
+        description: |-
+          Edges holds the relations/edges for other nodes in the graph.
+          The values are being populated by the WorkflowStepQuery when eager-loading is set.
+      id:
+        description: ID of the ent.
+        type: integer
+      log:
+        description: 步骤日志
+        type: string
+      name:
+        description: 步骤名称
+        type: string
+      started_at:
+        description: 开始时间
+        type: string
+      status:
+        allOf:
+        - $ref: '#/definitions/workflowstep.Status'
+        description: 步骤状态
+      step_number:
+        description: 步骤编号
+        type: integer
+    type: object
+  ent.WorkflowStepEdges:
+    properties:
+      certificate:
+        allOf:
+        - $ref: '#/definitions/ent.Certificate'
+        description: Certificate holds the value of the certificate edge.
+      user:
+        description: 所属用户
+        items:
+          $ref: '#/definitions/ent.User'
+        type: array
+      workflow:
+        allOf:
+        - $ref: '#/definitions/ent.Workflow'
+        description: 所属工作流
+    type: object
+  notification.CreateConfigRequest:
+    properties:
+      config:
+        additionalProperties: true
+        type: object
+      is_active:
+        type: boolean
+      name:
+        type: string
+      type:
+        enum:
+        - webhook
+        - email
+        - sms
+        type: string
+    required:
+    - config
+    - name
+    - type
+    type: object
+  notification.CreateTemplateRequest:
+    properties:
+      content_template:
+        type: string
+      format:
+        type: string
+      name:
+        type: string
+      subject_template:
+        type: string
+      template_type:
+        type: string
+    required:
+    - content_template
+    - format
+    - name
+    - template_type
+    type: object
+  notification.EventNotificationConfig:
+    properties:
+      methods:
+        description: 通知方式配置
+        items:
+          $ref: '#/definitions/notification.NotificationMethod'
+        type: array
+      template_id:
+        description: 模板ID（可选）
+        type: integer
+    type: object
+  notification.NotificationMethod:
+    properties:
+      config_ids:
+        description: 用户自定义配置ID（当UseSystemGlobal为false时使用）
+        items:
+          type: integer
+        type: array
+      targets:
+        description: |-
+          通知目标配置
+          email: 邮箱地址列表
+          sms: 手机号列表
+          webhook: webhook配置ID列表
+        items:
+          type: string
+        type: array
+      type:
+        description: '通知类型: email, sms, webhook'
+        type: string
+      use_system_global:
+        description: 使用系统全局配置
+        type: boolean
+    type: object
+  notification.TemplateResponse:
+    properties:
+      content_template:
+        type: string
+      created_at:
+        type: string
+      format:
+        type: string
+      id:
+        type: integer
+      is_system_default:
+        type: boolean
+      name:
+        type: string
+      subject_template:
+        type: string
+      template_type:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  notification.UnifiedNotificationConfig:
+    properties:
+      enabled:
+        description: 是否启用通知（总开关）
+        type: boolean
+      events:
+        additionalProperties:
+          $ref: '#/definitions/notification.EventNotificationConfig'
+        description: |-
+          事件级别的通知配置
+          键为事件类型，值为该事件的通知配置
+        type: object
+      global:
+        allOf:
+        - $ref: '#/definitions/notification.EventNotificationConfig'
+        description: 全局通知配置（当Events未配置特定事件时使用）
+    type: object
+  notification.UpdateConfigRequest:
+    properties:
+      config:
+        additionalProperties: true
+        type: object
+      is_active:
+        type: boolean
+      name:
+        type: string
+      type:
+        enum:
+        - webhook
+        - email
+        - sms
+        type: string
+    type: object
+  notification.UpdateTemplateRequest:
+    properties:
+      content_template:
+        type: string
+      format:
+        type: string
+      name:
+        type: string
+      subject_template:
+        type: string
+    required:
+    - content_template
+    - format
+    - name
+    type: object
+  notification.UserEmailConfigResponse:
+    properties:
+      from_name:
+        type: string
+      is_configured:
+        type: boolean
+    type: object
+  notification.UserSMSConfigResponse:
+    properties:
+      is_configured:
+        type: boolean
+      sign_name:
+        type: string
+    type: object
+  notificationconfig.Type:
+    enum:
+    - webhook
+    - email
+    - sms
+    type: string
+    x-enum-varnames:
+    - TypeWebhook
+    - TypeEmail
+    - TypeSms
+  order.OrderType:
+    enum:
+    - new
+    - renew
+    - upgrade
+    type: string
+    x-enum-varnames:
+    - OrderTypeNew
+    - OrderTypeRenew
+    - OrderTypeUpgrade
+  order.Status:
+    enum:
+    - pending
+    - pending
+    - active
+    - expired
+    type: string
+    x-enum-varnames:
+    - DefaultStatus
+    - StatusPending
+    - StatusActive
+    - StatusExpired
+  pagination.PaginatedResponse:
+    properties:
+      data:
+        description: 数据列表
+      page:
+        description: 当前页码
+        type: integer
+      page_size:
+        description: 每页数量
+        type: integer
+      total:
+        description: 总记录数
+        type: integer
+      total_pages:
+        description: 总页数
+        type: integer
+    type: object
+  response.Response:
+    properties:
+      code:
+        type: integer
+      data: {}
+      message:
+        type: string
+    type: object
+  servergroup.CreateServerGroupRequest:
+    properties:
+      access_ids:
+        items:
+          $ref: '#/definitions/servergroup.ServerGroupAccess'
+        type: array
+      description:
+        type: string
+      name:
+        type: string
+      status:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  servergroup.ServerGroupAccess:
+    properties:
+      access_id:
+        type: integer
+      type:
+        type: string
+    type: object
+  servergroup.Status:
+    enum:
+    - active
+    - active
+    - inactive
+    type: string
+    x-enum-varnames:
+    - DefaultStatus
+    - StatusActive
+    - StatusInactive
+  servergroup.Type:
+    enum:
+    - ssh
+    - api
+    - tencentcloud-teo
+    type: string
+    x-enum-varnames:
+    - TypeSSH
+    - TypeAPI
+    - TypeTencentcloudTeo
+  servergroup.UpdateServerGroupRequest:
+    description: 根据用户ID、服务器组ID和新参数更新现有服务器组记录，并更新远程权限关联
+    properties:
+      access_ids:
+        items:
+          $ref: '#/definitions/servergroup.ServerGroupAccess'
+        type: array
+      description:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      status:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  servergroupmember.Type:
+    enum:
+    - ssh
+    - api
+    - other
+    type: string
+    x-enum-varnames:
+    - TypeSSH
+    - TypeAPI
+    - TypeOther
+  workflowstep.Status:
+    enum:
+    - pending
+    - pending
+    - processing
+    - issued
+    - deploying
+    - completed
+    - failed
+    - cancelled
+    type: string
+    x-enum-varnames:
+    - DefaultStatus
+    - StatusPending
+    - StatusProcessing
+    - StatusIssued
+    - StatusDeploying
+    - StatusCompleted
+    - StatusFailed
+    - StatusCancelled
+host: localhost:8080
+info:
+  contact:
+    email: support@example.com
+    name: API Support
+  description: AutoSSL 证书管理API文档
+  license:
+    name: MIT
+    url: http://opensource.org/licenses/MIT
+  termsOfService: http://example.com/terms
+  title: AutoSSL API
+  version: "1.0"
+paths:
+  /access:
+    get:
+      consumes:
+      - application/json
+      description: 根据用户ID获取访问配置列表，支持分页
+      parameters:
+      - description: 页码，默认1
+        in: query
+        name: page
+        type: integer
+      - description: 每页条数，默认10
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/ent.Access'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取访问配置列表
+      tags:
+      - access
+    post:
+      consumes:
+      - application/json
+      description: 创建新的访问配置记录
+      parameters:
+      - description: 访问配置信息
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/access.CreateAccessRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/ent.Access'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: 创建访问配置
+      tags:
+      - access
+  /access/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 根据ID删除访问配置
+      parameters:
+      - description: 访问配置ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: string
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: 删除访问配置
+      tags:
+      - access
+    get:
+      consumes:
+      - application/json
+      description: 根据ID获取访问配置详细信息
+      parameters:
+      - description: 访问配置ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/ent.Access'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取访问配置详情
+      tags:
+      - access
+    put:
+      consumes:
+      - application/json
+      description: 根据ID更新访问配置信息
+      parameters:
+      - description: 访问配置ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 访问配置信息
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/access.UpdateAccessRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/ent.Access'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新访问配置
+      tags:
+      - access
+  /admin/global-config/email:
+    get:
+      description: 管理员获取完整的全局邮件配置信息
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/admin.GlobalEmailConfigResponse'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 管理员获取全局邮件配置
+      tags:
+      - 全局通知配置
+    post:
+      consumes:
+      - application/json
+      description: 管理员设置全局邮件配置信息
+      parameters:
+      - description: 邮件配置信息
+        in: body
+        name: config
+        required: true
+        schema:
+          $ref: '#/definitions/admin.SetEmailConfigRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 管理员设置全局邮件配置
+      tags:
+      - 全局通知配置
+  /admin/global-config/sms:
+    get:
+      description: 管理员获取完整的全局短信配置信息
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/admin.AdminGlobalSMSConfigResponse'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 管理员获取全局短信配置
+      tags:
+      - 全局通知配置
+    post:
+      consumes:
+      - application/json
+      description: 管理员设置全局短信配置信息
+      parameters:
+      - description: 短信配置信息
+        in: body
+        name: config
+        required: true
+        schema:
+          $ref: '#/definitions/admin.SetSMSConfigRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 管理员设置全局短信配置
+      tags:
+      - 全局通知配置
+  /admin/users:
+    get:
+      consumes:
+      - application/json
+      description: 管理员获取系统所有用户列表（需要管理员权限）
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/ent.User'
+                  type: array
+              type: object
+        "500":
+          description: 服务器错误
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: 获取所有用户
+      tags:
+      - 管理员
+  /admin/users/role:
+    put:
+      consumes:
+      - application/json
+      description: 管理员修改指定用户的角色（需要管理员权限）
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 无效请求格式
+          schema:
+            type: string
+        "500":
+          description: 服务器错误
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: 更新用户角色
+      tags:
+      - 管理员
+  /api/templates:
+    get:
+      description: 获取当前用户的所有自定义模板
+      parameters:
+      - description: 模板类型 (email, sms, webhook)
+        in: query
+        name: type
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 模板列表
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/notification.TemplateResponse'
+                  type: array
+              type: object
+        "401":
+          description: 用户未登录
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取用户自定义模板列表
+      tags:
+      - 通知模板
+    post:
+      consumes:
+      - application/json
+      description: 创建用户自定义通知模板
+      parameters:
+      - description: 模板信息
+        in: body
+        name: template
+        required: true
+        schema:
+          $ref: '#/definitions/notification.CreateTemplateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 创建成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/notification.TemplateResponse'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: 创建用户自定义模板
+      tags:
+      - 通知模板
+  /api/templates/{id}:
+    delete:
+      description: 删除用户自定义通知模板
+      parameters:
+      - description: 模板ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: 删除成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 模板不存在或无权限
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: 删除用户自定义模板
+      tags:
+      - 通知模板
+    get:
+      description: 获取指定模板的详细信息
+      parameters:
+      - description: 模板ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 模板详情
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/notification.TemplateResponse'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 模板不存在或无权限
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取模板详情
+      tags:
+      - 通知模板
+    put:
+      consumes:
+      - application/json
+      description: 更新用户自定义通知模板
+      parameters:
+      - description: 模板ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 模板信息
+        in: body
+        name: template
+        required: true
+        schema:
+          $ref: '#/definitions/notification.UpdateTemplateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/notification.TemplateResponse'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 模板不存在或无权限
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新用户自定义模板
+      tags:
+      - 通知模板
+  /api/templates/options:
+    get:
+      description: 获取可用的通知模板类型列表
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 模板类型列表
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  additionalProperties:
+                    items:
+                      type: string
+                    type: array
+                  type: object
+              type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取通知模板类型选项
+      tags:
+      - 通知模板
+  /api/templates/system:
+    get:
+      description: 获取所有系统默认模板
+      parameters:
+      - description: 模板类型 (email, sms, webhook)
+        in: query
+        name: type
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 系统模板列表
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/notification.TemplateResponse'
+                  type: array
+              type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取系统默认模板列表
+      tags:
+      - 通知模板
+  /auth/captcha:
+    get:
+      description: 生成图片验证码用于登录/注册验证
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 验证码响应（包含captcha_id和image）
+          schema:
+            $ref: '#/definitions/auth.CaptchaResponse'
+        "500":
+          description: 服务器错误
+          schema:
+            type: string
+      summary: 生成验证码
+      tags:
+      - 认证
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: 通过邮箱、密码和验证码登录系统获取访问令牌
+      parameters:
+      - description: 登录请求参数
+        in: body
+        name: login
+        required: true
+        schema:
+          $ref: '#/definitions/auth.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 登录成功响应（包含access_token和refresh_token）
+          schema:
+            $ref: '#/definitions/auth.LoginResponse'
+        "400":
+          description: 无效请求格式
+          schema:
+            type: string
+        "401":
+          description: 验证码错误/用户不存在/密码错误
+          schema:
+            type: string
+        "500":
+          description: 服务器错误
+          schema:
+            type: string
+      summary: 用户登录
+      tags:
+      - 认证
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: 使用刷新令牌获取新的访问令牌和刷新令牌
+      parameters:
+      - description: 刷新令牌请求参数
+        in: body
+        name: refresh
+        required: true
+        schema:
+          $ref: '#/definitions/auth.RefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 刷新成功响应（包含新的access_token和refresh_token）
+          schema:
+            $ref: '#/definitions/auth.RefreshResponse'
+        "400":
+          description: 无效请求格式
+          schema:
+            type: string
+        "401":
+          description: 无效刷新令牌
+          schema:
+            type: string
+        "500":
+          description: 服务器错误
+          schema:
+            type: string
+      summary: 刷新令牌
+      tags:
+      - 认证
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: 通过邮箱、密码和验证码注册新用户（第一个用户自动为管理员）
+      parameters:
+      - description: 注册请求参数
+        in: body
+        name: register
+        required: true
+        schema:
+          $ref: '#/definitions/auth.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 注册成功响应（包含用户ID和邮箱）
+          schema:
+            $ref: '#/definitions/auth.RegisterResponse'
+        "400":
+          description: 无效请求格式/验证码错误
+          schema:
+            type: string
+        "409":
+          description: 用户已存在
+          schema:
+            type: string
+        "500":
+          description: 服务器错误
+          schema:
+            type: string
+      summary: 用户注册
+      tags:
+      - 认证
+  /cert/certificates:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        根据jwt携带的id查看当前用户的所有证书
+        查看证书请求
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 查看证书响应
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/pagination.PaginatedResponse'
+              type: object
+        "400":
+          description: 无效请求格式
+          schema:
+            type: string
+        "500":
+          description: 服务器错误
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: 查看当前用户的所有证书
+      tags:
+      - 证书管理
+    post:
+      consumes:
+      - application/json
+      description: |-
+        根据域名列表、颁发机构等信息创建新的SSL证书
+
+        支持多种验证方式：
+        - DNS验证：通过DNS提供商自动添加TXT记录完成验证
+        - HTTP验证：通过在服务器上放置验证文件完成验证
+
+        部署配置：
+        - 可通过access_ids指定单个或多个服务器进行部署
+        - 可通过server_group_id指定服务器组进行批量部署
+        - 通过extra_config传递部署适配器特定配置
+
+        通知配置：
+        - 支持Webhook、邮件、短信等多种通知方式
+        - 可配置在申请、部署、成功、失败等不同阶段发送通知
+      parameters:
+      - description: 创建证书请求参数
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/certificate.CreateCertificateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 创建成功响应
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/ent.Certificate'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: 创建证书
+      tags:
+      - 证书管理
+  /cert/certificates/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 根据证书ID删除指定证书
+      parameters:
+      - description: 证书ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除成功提示
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 无效ID格式
+          schema:
+            type: string
+        "500":
+          description: 服务器错误
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: 删除证书
+      tags:
+      - 证书管理
+  /cert/certificates/{id}/download:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        下载指定证书的所有格式（PEM、DER、PFX、JKS等）打包为zip文件
+        支持多种证书格式导出，包括：
+        - PEM格式：包含证书和私钥的文本格式
+        - DER格式：二进制格式的证书
+        - PFX格式：包含证书和私钥的PKCS12格式
+        - JKS格式：Java密钥库格式
+      parameters:
+      - description: 证书ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: PFX/JKS格式密码（默认：changeit）
+        in: query
+        name: password
+        type: string
+      produces:
+      - application/zip
+      responses:
+        "200":
+          description: 证书压缩包
+          schema:
+            type: file
+        "400":
+          description: 无效ID格式
+          schema:
+            type: string
+        "404":
+          description: 证书不存在
+          schema:
+            type: string
+        "500":
+          description: 服务器错误
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: 下载证书
+      tags:
+      - 证书管理
+  /dashboard/count-stats:
+    get:
+      consumes:
+      - application/json
+      description: 获取当前用户的总证书数、access数量、服务组数量、DNS供应商数量
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 数量统计数据
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dashboard.CountStats'
+              type: object
+        "500":
+          description: 获取统计数据失败
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取用户数量统计
+      tags:
+      - 仪表板
+  /dashboard/pending-workflows:
+    get:
+      consumes:
+      - application/json
+      description: 获取最近5条待开始工作流，包含证书名、部署类型、创建时间
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 待开始工作流列表
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dashboard.PendingWorkflow'
+                  type: array
+              type: object
+        "500":
+          description: 获取待开始工作流失败
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取待开始工作流
+      tags:
+      - 仪表板
+  /dashboard/recent-deployments:
+    get:
+      consumes:
+      - application/json
+      description: 获取最近5条部署状态，包含证书名、部署类型、更新时间、状态
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 最近部署列表
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dashboard.DeploymentInfo'
+                  type: array
+              type: object
+        "500":
+          description: 获取部署状态失败
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取最近部署状态
+      tags:
+      - 仪表板
+  /dns-provider/dnsproviders:
+    get:
+      consumes:
+      - application/json
+      description: 获取所有DNS提供商的列表，支持分页查询
+      parameters:
+      - description: 页码，默认为1
+        in: query
+        name: page
+        type: integer
+      - description: 每页数量，默认为10
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: DNS提供商分页列表
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/pagination.PaginatedResponse'
+              type: object
+        "500":
+          description: 服务器错误
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: 获取DNS提供商列表
+      tags:
+      - DNS提供商管理
+    post:
+      consumes:
+      - application/json
+      description: 根据提供商类型、API密钥等信息创建新的DNS提供商配置
+      parameters:
+      - description: 创建DNS提供商请求参数
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dnsprovider.CreateDNSProviderRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 创建成功响应
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 无效请求格式
+          schema:
+            type: string
+        "500":
+          description: 服务器错误
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: 创建DNS提供商配置
+      tags:
+      - DNS提供商管理
+  /dns-provider/dnsproviders/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 根据ID删除指定的DNS提供商配置
+      parameters:
+      - description: DNS提供商ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除成功提示
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 无效ID格式
+          schema:
+            type: string
+        "500":
+          description: 服务器错误
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: 删除DNS提供商配置
+      tags:
+      - DNS提供商管理
+    get:
+      consumes:
+      - application/json
+      description: 根据DNS提供商ID获取详细配置信息
+      parameters:
+      - description: DNS提供商ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: DNS提供商详情
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 无效ID格式
+          schema:
+            type: string
+        "500":
+          description: 服务器错误
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: 获取DNS提供商详情
+      tags:
+      - DNS提供商管理
+    put:
+      consumes:
+      - application/json
+      description: 根据ID和新参数更新现有DNS提供商配置
+      parameters:
+      - description: DNS提供商ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 更新DNS提供商请求参数
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dnsprovider.UpdateDNSProviderRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功响应
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 无效ID或请求格式
+          schema:
+            type: string
+        "500":
+          description: 服务器错误
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: 更新DNS提供商配置
+      tags:
+      - DNS提供商管理
+  /notification/config:
+    get:
+      description: 获取当前用户的所有通知配置
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 通知配置列表
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/ent.NotificationConfig'
+                  type: array
+              type: object
+        "500":
+          description: 获取通知配置失败
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取通知配置列表
+      tags:
+      - 通知配置
+    post:
+      consumes:
+      - application/json
+      description: 创建新的通知配置
+      parameters:
+      - description: 通知配置信息
+        in: body
+        name: config
+        required: true
+        schema:
+          $ref: '#/definitions/notification.CreateConfigRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 创建成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/ent.NotificationConfig'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: 用户不存在
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 创建通知配置失败
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: 创建通知配置
+      tags:
+      - 通知配置
+  /notification/config/{id}:
+    delete:
+      description: 删除指定的通知配置
+      parameters:
+      - description: 通知配置ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: 删除成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: ID格式错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: 通知配置不存在或无权限
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 删除通知配置失败
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: 删除通知配置
+      tags:
+      - 通知配置
+    put:
+      consumes:
+      - application/json
+      description: 更新指定的通知配置
+      parameters:
+      - description: 通知配置ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 更新的通知配置信息
+        in: body
+        name: config
+        required: true
+        schema:
+          $ref: '#/definitions/notification.UpdateConfigRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/ent.NotificationConfig'
+              type: object
+        "400":
+          description: ID格式错误或请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: 通知配置不存在或无权限
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 更新通知配置失败
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新通知配置
+      tags:
+      - 通知配置
+  /notification/global/email:
+    get:
+      description: 用户获取全局邮件配置，只显示是否已配置，不显示敏感信息
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 全局邮件配置
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/notification.UserEmailConfigResponse'
+              type: object
+        "500":
+          description: 获取邮件配置失败
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: 用户获取全局邮件配置
+      tags:
+      - 通知配置
+  /notification/global/sms:
+    get:
+      description: 用户获取全局短信配置，只显示是否已配置，不显示敏感信息
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 全局短信配置
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/notification.UserSMSConfigResponse'
+              type: object
+        "500":
+          description: 获取短信配置失败
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: 用户获取全局短信配置
+      tags:
+      - 通知配置
+  /servers:
+    get:
+      consumes:
+      - application/json
+      description: 获取当前用户的服务器组列表，包含每个服务器组关联的访问权限数量
+      parameters:
+      - description: 页码，默认1
+        in: query
+        name: page
+        type: integer
+      - description: 每页条数，默认10
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 服务器组列表
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/ent.ServerGroup'
+                  type: array
+              type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取服务器组列表
+      tags:
+      - 服务器组管理
+    post:
+      consumes:
+      - application/json
+      description: 创建一个新的服务器组，并关联指定的访问权限
+      parameters:
+      - description: token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: 服务器组创建请求
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/servergroup.CreateServerGroupRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 创建成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/ent.ServerGroup'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 权限不足
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 创建服务器组
+      tags:
+      - 服务器组管理
+  /servers/{id}:
+    delete:
+      description: 删除指定的服务器组，同时移除所有关联的服务器组成员
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: 服务器组ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 无效ID格式
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 权限不足
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 删除服务器组
+      tags:
+      - 服务器组管理
+    get:
+      consumes:
+      - application/json
+      description: 根据ID获取服务器组的详细信息，包括关联的访问权限
+      parameters:
+      - description: 服务器组ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 服务器组详情
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/ent.ServerGroup'
+              type: object
+        "400":
+          description: 无效ID格式
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: 服务器组不存在
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取服务器组详情
+      tags:
+      - 服务器组管理
+    put:
+      consumes:
+      - application/json
+      description: 更新指定服务器组的信息，包括名称、描述、状态和关联的访问权限
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: 服务器组ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 服务器组更新请求
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/servergroup.UpdateServerGroupRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/ent.ServerGroup'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 权限不足
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 更新服务器组
+      tags:
+      - 服务器组管理
+  /workflow/workflows:
+    get:
+      consumes:
+      - application/json
+      description: 获取当前用户的工作流列表，支持分页和筛选
+      parameters:
+      - description: 页码，默认1
+        in: query
+        name: page
+        type: integer
+      - description: 每页条数，默认10
+        in: query
+        name: page_size
+        type: integer
+      - description: 开始日期，格式：2006-01-02
+        in: query
+        name: start_date
+        type: string
+      - description: 结束日期，格式：2006-01-02
+        in: query
+        name: end_date
+        type: string
+      - description: 状态筛选，可选值：pending|running|completed|failed|cancelled
+        in: query
+        name: status
+        type: string
+      - description: 域名筛选，支持模糊匹配
+        in: query
+        name: domain
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 工作流列表
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/ent.Workflow'
+                  type: array
+              type: object
+        "500":
+          description: 获取工作流列表失败
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取工作流列表
+      tags:
+      - 工作流管理
+  /workflow/workflows/{id}:
+    get:
+      consumes:
+      - application/json
+      description: 根据工作流ID获取工作流的详细信息
+      parameters:
+      - description: 工作流ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 工作流详情
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/ent.Workflow'
+              type: object
+        "400":
+          description: 无效的工作流ID
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 获取工作流失败
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取工作流详情
+      tags:
+      - 工作流管理
+  /workflow/workflows/{id}/cancel:
+    post:
+      consumes:
+      - application/json
+      description: 取消正在运行的工作流
+      parameters:
+      - description: 工作流ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 工作流已取消
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 无效的工作流ID
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 取消工作流失败
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: 取消工作流
+      tags:
+      - 工作流管理
+  /workflow/workflows/{id}/retry:
+    post:
+      consumes:
+      - application/json
+      description: 重试失败的工作流
+      parameters:
+      - description: 工作流ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 工作流已重新启动
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 无效的工作流ID
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 重试工作流失败
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: 重试工作流
+      tags:
+      - 工作流管理
+  /workflow/workflows/{id}/start:
+    post:
+      consumes:
+      - application/json
+      description: 根据工作流ID启动工作流执行
+      parameters:
+      - description: 工作流ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 工作流已成功启动
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 无效的工作流ID
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 启动工作流失败
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: 启动工作流
+      tags:
+      - 工作流管理
+  /workflow/workflows/{id}/status:
+    put:
+      consumes:
+      - application/json
+      description: 更新指定工作流的状态
+      parameters:
+      - description: 工作流ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 状态更新请求
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 工作流状态已更新
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 无效的工作流ID或请求参数
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 更新工作流状态失败
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新工作流状态
+      tags:
+      - 工作流管理
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

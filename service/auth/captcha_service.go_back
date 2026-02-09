@@ -1,0 +1,49 @@
+package auth
+
+import (
+	"autoSSL/config"
+	"autoSSL/service/captcha"
+	"log"
+	"sync"
+)
+
+var (
+	captchaAdapter captcha.CaptchaAdapter
+	initOnce       sync.Once
+	cache          sync.Map
+)
+
+// InitCaptchaService 初始化验证码服务
+// @param conf config.CaptchaConfig - 验证码配置
+func InitCaptchaService(conf config.CaptchaConfig) {
+	initOnce.Do(func() {
+		adapter, err := captcha.NewCaptchaFactory(conf)
+		if err != nil {
+			panic(err)
+		}
+		captchaAdapter = adapter
+		log.Printf("验证码服务已初始化，类型: %s", conf.Type)
+	})
+}
+
+// GenerateCaptcha 生成验证码
+// @return string - 验证码ID
+// @return string - 验证码数据(通常是base64编码的图片)
+func GenerateCaptcha() (string, string) {
+	if captchaAdapter == nil {
+		log.Fatal("验证码服务未初始化！请先调用 InitCaptchaService")
+	}
+	id, data, err := captchaAdapter.Generate()
+	if err != nil {
+		return "", ""
+	}
+	return id, data.(string)
+}
+
+// VerifyCaptcha 验证验证码
+// @param id string - 验证码ID
+// @param answer string - 用户输入的答案
+// @return bool - 验证结果
+func VerifyCaptcha(id, answer string) bool {
+	return captchaAdapter.Verify(id, answer)
+}

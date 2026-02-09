@@ -1,0 +1,29 @@
+{
+  "provider": "ssh",
+  "config": {
+    "ssh_host": "target-server.internal",
+    "ssh_port": 22,
+    "ssh_username": "deploy",
+    "ssh_password": "", 
+    "ssh_key": "-----BEGIN OPENSSH PRIVATE KEY-----\n...\n-----END OPENSSH PRIVATE KEY-----",
+    "cert_path": "/etc/ssl/certs/server.crt",
+    "key_path": "/etc/ssl/private/server.key",
+    "reload_command": "sudo systemctl reload nginx",
+    "jump_servers": [
+      {
+        "ssh_host": "bastion-1.company.com",
+        "ssh_port": 22,
+        "ssh_username": "admin",
+        "ssh_password": "", 
+        "ssh_key": "-----BEGIN OPENSSH PRIVATE KEY-----\n...\n-----END OPENSSH PRIVATE KEY-----"
+      },
+      {
+        "ssh_host": "bastion-2.company.com",
+        "ssh_port": 2222,
+        "ssh_username": "deploy",
+        "ssh_password": "", 
+        "ssh_key": "-----BEGIN OPENSSH PRIVATE KEY-----\n...\n-----END OPENSSH PRIVATE KEY-----"
+      }
+    ]
+  }
+}
